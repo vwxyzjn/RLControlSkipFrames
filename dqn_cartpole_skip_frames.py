@@ -61,7 +61,7 @@ TOTAL_MAX_TIMESTEPS = 400000
 ## Initialize env
 # https://github.com/openai/gym/blob/master/gym/envs/toy_text/taxi.py
 env = gym.make(
-    "Taxi-v2"
+    "CartPole-v0"
 ).env  # without the .env, there is gonna be a 200 max num steps.
 random.seed(SEED)
 env.seed(SEED)
@@ -77,14 +77,11 @@ def build_neural_network(scope: str) -> Tuple[tf.Variable]:
         # So, instead of
         # observation = tf.placeholder(tf.float32, [None, 1], name="observation")
         # We use
-        observation = tf.placeholder(shape=(None,), dtype=tf.int32)
-        processed_observations = tf.to_float(
-            tf.one_hot(observation, env.observation_space.n)
-        )
+        observation = tf.placeholder(shape=(None,) + env.observation_space.shape, dtype=tf.float32)
         pred = tf.placeholder(tf.float32, [None], name="pred")
         q_value_index = tf.placeholder(tf.int32, [None], name="q_value_index")
         fc1 = tf.contrib.layers.fully_connected(
-            inputs=processed_observations,
+            inputs=observation,
             num_outputs=64,
             activation_fn=tf.nn.relu,
             weights_initializer=tf.contrib.layers.xavier_initializer(),
@@ -110,7 +107,14 @@ def build_neural_network(scope: str) -> Tuple[tf.Variable]:
 
         # Manual gradient desent step, which is equivalent to
         train_opt = tf.train.GradientDescentOptimizer(ALPHA).minimize(loss)
+        grads = tf.gradients(loss, tf.trainable_variables(scope))
+        vars_and_grads = list(zip(tf.trainable_variables(scope), grads))
+        ops = []
+        for item in vars_and_grads:
+            ops.append(tf.assign(item[0], item[0] - ALPHA * item[1]))
+        train_opt = tf.group(*ops)
 
+        #
         saver = tf.train.Saver()
         tf.summary.scalar("Loss", loss)
         write_op = tf.summary.merge_all()
