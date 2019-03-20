@@ -3,7 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter1d
 
+plot_indices = [[0,0], [1,0],[0,1],[1,1]]
+plot_idx = 0
 all_experiment_data = []
+fig, ax = plt.subplots(2, 2, figsize=(15,10))
 for root, dirs, filenames in os.walk("outputs"):
     if len(dirs) == 0:
         experiment_name =  os.path.basename(root)
@@ -24,11 +27,11 @@ for root, dirs, filenames in os.walk("outputs"):
                     np.array([item[:min_length] for item in experiment_data[key]]),
                     axis=0)
             smoothed_average_data = gaussian_filter1d(average_data, sigma=2)
-            plt.plot(smoothed_average_data, label=f"frame_skip = {key}")
-        plt.legend(bbox_to_anchor=(0, 1),
-           bbox_transform=plt.gcf().transFigure)
-        plt.suptitle(experiment_name)
-        plt.savefig(f"imgs/{experiment_name}.svg")
-        plt.show()
-            
-                
+            idx = plot_indices[plot_idx]
+            ax[idx[0], idx[1]].plot(smoothed_average_data, label=f"frame_skip = {key}")
+            ax[idx[0], idx[1]].set_title(experiment_name)
+    
+        plot_idx += 1
+plt.legend()
+plt.savefig("imgs/experiment_results.svg")
+plt.show()
